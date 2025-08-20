@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import plot_tree
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -50,14 +52,15 @@ st.write(df.describe())
 
 # Conteo de valores de la clase objetivo
 st.subheader("Distribución de la Clase")
-class_counts = df['Clase'].value_counts()
-st.bar_chart(class_counts)
-st.write(class_counts)
+fig, ax = plt.subplots(figsize=(6, 4))
+sns.countplot(x='Clase', data=df, palette='RdPu', ax=ax)
+ax.set_title('Conteo de Clases')
+st.pyplot(fig)
 
 # Visualización de la relación entre características
 st.subheader("Visualización de las Características")
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.scatterplot(x='Caracteristica_1', y='Caracteristica_2', hue='Clase', data=df, palette='viridis', ax=ax)
+fig, ax = plt.subplots(figsize=(8, 6))
+sns.scatterplot(x='Caracteristica_1', y='Caracteristica_2', hue='Clase', data=df, palette='RdPu', ax=ax)
 ax.set_title('Distribución de Clases en las Características')
 st.pyplot(fig)
 
@@ -77,10 +80,13 @@ st.write(f"Conjunto de prueba: {len(X_test)} muestras")
 st.header("4. Entrenamiento del Modelo")
 st.markdown("---")
 
-model_choice = st.selectbox("Selecciona un modelo", ["Regresión Logística", "Random Forest"])
+model_choice = st.selectbox("Selecciona un modelo", ["Regresión Logística", "K-Nearest Neighbors", "Random Forest"])
 
 if model_choice == "Regresión Logística":
     model = LogisticRegression()
+elif model_choice == "K-Nearest Neighbors":
+    n_neighbors = st.slider("Número de vecinos (K)", min_value=1, max_value=15, value=5, step=1)
+    model = KNeighborsClassifier(n_neighbors=n_neighbors)
 else:
     model = RandomForestClassifier(n_estimators=100, random_state=42)
 
@@ -97,8 +103,8 @@ st.markdown("---")
 
 st.subheader("Matriz de Confusión")
 cm = confusion_matrix(y_test, y_pred)
-fig, ax = plt.subplots()
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+fig, ax = plt.subplots(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt="d", cmap="RdPu", ax=ax)
 plt.xlabel('Predicho')
 plt.ylabel('Real')
 st.pyplot(fig)
@@ -121,12 +127,31 @@ def plot_decision_boundary(X_train, y_train, model):
     Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
     Z = Z.reshape(xx.shape)
 
-    fig, ax = plt.subplots()
-    ax.contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.coolwarm)
-    sns.scatterplot(x=X_test.iloc[:, 0], y=X_test.iloc[:, 1], hue=y_test, style=y_pred, ax=ax, palette='viridis', markers=['o', 'X'], s=100)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.RdPu)
+    sns.scatterplot(x=X_test.iloc[:, 0], y=X_test.iloc[:, 1], hue=y_test, style=y_pred, ax=ax, palette='RdPu', markers=['o', 'X'], s=100)
     ax.set_title("Límite de Decisión del Modelo")
     ax.set_xlabel("Caracteristica_1")
     ax.set_ylabel("Caracteristica_2")
     return fig
 
 st.pyplot(plot_decision_boundary(X_train, y_train, model))
+
+# --- Sección de Visualización de Árbol de Decisión (si aplica) ---
+if model_choice == "Random Forest":
+    st.header("7. Visualización del Árbol de Decisión")
+    st.markdown("---")
+    st.write("Debido al gran tamaño del modelo, se visualiza el primer árbol del bosque.")
+
+    # Obtenemos el primer árbol del bosque
+    tree_to_plot = model.estimators_[0]
+
+    # Graficamos el árbol
+    fig, ax = plt.subplots(figsize=(20, 10))
+    plot_tree(tree_to_plot,
+              feature_names=X.columns,
+              class_names=['Clase 0', 'Clase 1'],
+              filled=True,
+              fontsize=8,
+              ax=ax)
+    st.pyplot(fig)
