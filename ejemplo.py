@@ -51,17 +51,26 @@ if df is not None:
         # Asegúrate de que los datos son numéricos para el modelo
         try:
             X = df[feature_columns]
-            y = df[target_column]
+            y_raw = df[target_column]
             
             # Convierte las columnas a tipos numéricos, si es posible
-            for col in X.columns:
-                X[col] = pd.to_numeric(X[col], errors='coerce')
-            y = pd.to_numeric(y, errors='coerce')
+            X = X.apply(pd.to_numeric, errors='coerce')
+            y_raw = pd.to_numeric(y_raw, errors='coerce')
             
-            # Elimina filas con valores nulos generados por la conversión
-            data = pd.concat([X, y], axis=1).dropna()
-            X = data[feature_columns]
-            y = data[target_column]
+            # Elimina filas con valores nulos
+            data_processed = pd.concat([X, y_raw], axis=1).dropna()
+            X = data_processed[feature_columns]
+            y_raw = data_processed[target_column]
+            
+            # --- NUEVO CÓDIGO AGREGADO AQUÍ ---
+            # Si la variable objetivo es continua, la discretizamos
+            if y_raw.nunique() > 10 and y_raw.dtype in ['float64', 'int64']:
+                st.warning(f"La variable objetivo '{target_column}' tiene valores continuos. Se agruparán en 5 bins para la clasificación.")
+                n_bins = st.slider("Número de Bins (Clases)", min_value=2, max_value=10, value=5)
+                y = pd.cut(y_raw, bins=n_bins, labels=False)
+            else:
+                y = y_raw
+            # --- FIN DEL NUEVO CÓDIGO ---
 
             if len(X) == 0:
                 st.error("No hay datos numéricos válidos en las columnas seleccionadas para continuar.")
