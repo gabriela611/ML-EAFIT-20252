@@ -35,16 +35,34 @@ def generate_data(n):
 
 df = generate_data(n_samples)
 st.write(f"Se generaron {n_samples} muestras con 2 características y una clase binaria.")
+
+# --- Sección de Análisis Exploratorio de Datos (EDA) ---
+st.header("2. Análisis Exploratorio de Datos (EDA) 🔍")
+st.markdown("---")
+
+# Mostrar las primeras filas del DataFrame
+st.subheader("Vista previa de los datos")
 st.dataframe(df.head())
 
-# Visualización de los datos
-st.subheader("Visualización de los Datos")
-fig, ax = plt.subplots()
+# Estadísticas descriptivas
+st.subheader("Estadísticas Descriptivas")
+st.write(df.describe())
+
+# Conteo de valores de la clase objetivo
+st.subheader("Distribución de la Clase")
+class_counts = df['Clase'].value_counts()
+st.bar_chart(class_counts)
+st.write(class_counts)
+
+# Visualización de la relación entre características
+st.subheader("Visualización de las Características")
+fig, ax = plt.subplots(figsize=(10, 6))
 sns.scatterplot(x='Caracteristica_1', y='Caracteristica_2', hue='Clase', data=df, palette='viridis', ax=ax)
+ax.set_title('Distribución de Clases en las Características')
 st.pyplot(fig)
 
 # --- Sección de División de Datos ---
-st.header("2. División de los Datos")
+st.header("3. División de los Datos")
 st.markdown("---")
 
 test_size = st.slider("Porcentaje de datos para el conjunto de prueba", min_value=0.1, max_value=0.5, value=0.2, step=0.05)
@@ -56,7 +74,7 @@ st.write(f"Conjunto de entrenamiento: {len(X_train)} muestras")
 st.write(f"Conjunto de prueba: {len(X_test)} muestras")
 
 # --- Sección de Entrenamiento y Predicción ---
-st.header("3. Entrenamiento del Modelo")
+st.header("4. Entrenamiento del Modelo")
 st.markdown("---")
 
 model_choice = st.selectbox("Selecciona un modelo", ["Regresión Logística", "Random Forest"])
@@ -74,7 +92,7 @@ accuracy = accuracy_score(y_test, y_pred)
 st.success(f"Modelo entrenado con éxito. Precisión en el conjunto de prueba: **{accuracy:.2f}**")
 
 # --- Sección de Evaluación del Modelo ---
-st.header("4. Evaluación y Métricas")
+st.header("5. Evaluación y Métricas")
 st.markdown("---")
 
 st.subheader("Matriz de Confusión")
@@ -91,7 +109,7 @@ report_df = pd.DataFrame(report).transpose()
 st.dataframe(report_df)
 
 # --- Sección de Visualización de Límites de Decisión ---
-st.header("5. Visualización del Límite de Decisión")
+st.header("6. Visualización del Límite de Decisión")
 st.markdown("---")
 
 def plot_decision_boundary(X_train, y_train, model):
@@ -104,4 +122,11 @@ def plot_decision_boundary(X_train, y_train, model):
     Z = Z.reshape(xx.shape)
 
     fig, ax = plt.subplots()
-    ax.contourf(xx, yy, Z, alpha=0.3,
+    ax.contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.coolwarm)
+    sns.scatterplot(x=X_test.iloc[:, 0], y=X_test.iloc[:, 1], hue=y_test, style=y_pred, ax=ax, palette='viridis', markers=['o', 'X'], s=100)
+    ax.set_title("Límite de Decisión del Modelo")
+    ax.set_xlabel("Caracteristica_1")
+    ax.set_ylabel("Caracteristica_2")
+    return fig
+
+st.pyplot(plot_decision_boundary(X_train, y_train, model))
